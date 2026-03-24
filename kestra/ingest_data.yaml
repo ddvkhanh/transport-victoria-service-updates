@@ -1,0 +1,18 @@
+id: transport_vic_service_updates_metro
+name: Transport Victoria Service Updates - Metro
+namespace: captone_project
+description: "Ingest and process near real-time metro service updates from the PTV API, extracting key fields for analysis and storage."
+
+tasks:
+  - id: ingest_metro_updates
+    type: io.kestra.plugin.scripts.python.Commands
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: python:3.13-slim
+    namespaceFile:
+      enabled: true
+    beforeCommands:
+      - "pip install requests gtfs-realtime-bindings protobuf python-dotenv"
+    commands:
+      - "python app/ingest_data.py"
+   
