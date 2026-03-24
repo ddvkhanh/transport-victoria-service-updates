@@ -1,36 +1,25 @@
-# Yarra Trams Service Alerts Viewer - Full Fields Extraction
-# Requirements: pip install requests gtfs-realtime-bindings protobuf python-dotenv
-
-import requests
-from google.transit import gtfs_realtime_pb2
-from datetime import datetime, timezone
-from dotenv import load_dotenv
+import json
 import os
 import sys
+from datetime import datetime, timezone
+
+import requests
+from dotenv import load_dotenv
+from google.transit import gtfs_realtime_pb2
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Configuration
-API_URL = "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/tram/trip-updates"
-API_KEY = os.getenv("YARRA_TRAMS_KEYID")
-
-if not API_KEY:
-    raise ValueError("YARRA_TRAMS_KEYID not found in .env file. Please add it.")
-
+API_URL = "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/metro/service-alerts"
+API_KEY = os.getenv("PTV_KEYID")
 HEADERS = {"KeyID": API_KEY}
 OUTPUT_DIR = "output"
 TIMEOUT_SECONDS = 15
 
-# def get_translated_text(translated_string):
-#     """Extract the first available text from a TranslatedString (usually English)"""
-#     if not translated_string.translation:
-#         return "(no text)"
-#     # Prefer English, fall back to first available
-#     for t in translated_string.translation:
-#         if t.language == "en" or not t.language:
-#             return t.text
-#     return translated_string.translation[0].text  # fallback
+if not API_KEY:
+    raise ValueError("YARRA_TRAMS_KEYID not found in .env file. Please add it.")
+
 
 def fetch_feed():
     print("Fetching latest Yarra Trams service alerts...")
@@ -38,59 +27,126 @@ def fetch_feed():
     response.raise_for_status()
     return response.content
 
+
 def parse_feed(feed_content):
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(feed_content)
     return feed
 
 def translate_text(translated_string):
-    """Extract the first available text from a TranslatedString (usually English)"""
+    """
+    Extract the first available text from a TranslatedString.
+    Prefer English if present, otherwise fall back to the first translation.
+    """
     if not translated_string.translation:
-        return "(no text)"
-    # Prefer English, fall back to first available
+        return None
+
     for t in translated_string.translation:
         if t.language == "en" or not t.language:
             return t.text
-    return translated_string.translation[0].text  # fallback
 
-def display_alerts(feed):
-    feed_time = datetime.fromtimestamp(feed.header.timestamp, tz=timezone.utc) if feed.header.timestamp else "missing"
-    print(f"\nFeed generated at: {feed_time} UTC")
+    return translated_string.translation[0].text
+
+
+def to_iso_or_none(unix_time):
+    """Convert Unix timestamp to ISO-8601 UTC string, or None if not set."""
+    if not unix_time:
+        return None
+    return datetime.fromtimestamp(unix_time, tz=timezone.utc).isoformat()
+
+
+def get_enum_name(enum_type, value):
+    """
+    Safely convert protobuf enum numeric value to enum name.
+    Returns None if the value is missing/unknown.
+    """
+    try:
+        return enum_type.Name(value)
+    except ValueError:
+        return f"UNKNOWN_{value}"
+    
+
+def save_records(records):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(
+        OUTPUT_DIR,
+        f"service_updates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ndjson"
+    )
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        for record in records:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    print(f"Saved {len(records)} records to: {output_path}")
+
+
+def extract_informed_entities(alert):
+    entities = []
+
+    for ie in alert.informed_entity:
+        item = {
+            "agency_id": ie.agency_id if ie.HasField("agency_id") else None,
+            "route_id": ie.route_id if ie.HasField("route_id") else None,
+            "direction_id": ie.direction_id if ie.HasField("direction_id") else None,
+            "stop_id": ie.stop_id if ie.HasField("stop_id") else None,
+        }
+        entities.append(item)
+    return entities
+
+def extract_active_periods(alert):
+    periods = []
+    for p in alert.active_period:
+        start = to_iso_or_none(p.start) if p.HasField("start") else None
+        end = to_iso_or_none(p.end) if p.HasField("end") else None
+        periods.append({"start": start, "end": end})
+    return periods
+
+
+def extract_alert_record(alert):
+        alert = {
+            "header_text": translate_text(alert.header_text) if alert.HasField("header_text") else None,
+            "description_text": translate_text(alert.description_text) if alert.HasField("description_text") else None,
+            "severity_level": get_enum_name(gtfs_realtime_pb2.Alert.SeverityLevel, alert.severity_level) if alert.HasField("severity_level") else None,
+            "cause": get_enum_name(gtfs_realtime_pb2.Alert.Cause, alert.cause) if alert.HasField("cause") else None,
+            "effect": get_enum_name(gtfs_realtime_pb2.Alert.Effect, alert.effect) if alert.HasField("effect") else None,
+            "informed_entities": extract_informed_entities(alert),
+            "active_periods": extract_active_periods(alert)
+        }
+        return alert
+
+
+def fetch_and_parse_record(feed):
+    records = []
+    now_unix = int(datetime.now(timezone.utc).timestamp())
+    feed_time = to_iso_or_none(feed.header.timestamp) if feed.header.timestamp else "missing"
+    print(f"\nFeed generated at: {feed_time}")
     print(f"Total entities in feed: {len(feed.entity)}\n")
 
-    active_count = 0
-    now_unix = int(datetime.now(timezone.utc).timestamp())
-
     for entity in feed.entity:
+        if not entity.HasField('alert'):
+            continue
 
-        trip_update = entity.trip_update
-        trip = trip_update.trip
-        stop_time_update = trip_update.stop_time_update
+        record = {
+            "entity_timestamp": to_iso_or_none(feed.header.timestamp) if feed.header.timestamp else None,
+            "entity_id": entity.id,
+            "alert": extract_alert_record(entity.alert) if entity.HasField("alert") else None
+        }
+        records.append(record)
 
-        print("══════════════════════════════════════════════════════════════")
+    save_records(records)
 
-        print(f"  Entity ID         : {entity.id}")
-        print(f"  Trip ID           : {trip.trip_id}")
-        print(f"  Route ID          : {trip.route_id}")
-        print(f"  Start Time         : {trip.start_time}")
-        print(f"  Start Date        : {trip.start_date}")
-        print(f"  Schedule Relationship : {trip.schedule_relationship}")
-        
-        for stop_time in stop_time_update:
-            print(f"    Stop ID         : {stop_time.stop_id}")
-            print(f"    Arrival Time    : {stop_time.arrival.time if stop_time.HasField('arrival') else 'N/A'}")
-            print(f"    Departure Time  : {stop_time.departure.time if stop_time.HasField('departure') else 'N/A'}")
-            print(f"    Schedule Relationship : {stop_time.schedule_relationship}")
 
-def fetch_and_parse_alerts():
+if __name__ == "__main__":
     try:
         feed_content = fetch_feed()
         feed = parse_feed(feed_content)
-        display_alerts(feed)
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data: {e}")
+        fetch_and_parse_record(feed)
+    except requests.HTTPError as e:
+        print(f"HTTP error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except requests.RequestException as e:
+        print(f"Request error: {e}", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
-        print(f"An error occurred: {e}")
-
-if __name__ == "__main__":
-    fetch_and_parse_alerts()
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
