@@ -1,42 +1,42 @@
 variable "transport-vic-sv-updates-metro" {
   description = "Transport Victoria Service Updates for Metro"
   type        = string
-  default     = "demo_dataset"
+  default     = "ptv_metro_dataset"
 }
 
 variable "gcs_storage_class" {
-  description = "GCS Storage Class"
+  description = "Storage Class"
   type        = string
   default     = "STANDARD"
 
 }
 
 variable "gcs_bucket_name" {
-  description = "GCS Bucket Name"
+  description = "Bucket Name"
   type        = string
-  default     = "terraform-485110-terra-bucket"
+  default     = "ptv-bucket-kd"
 
 }
 
-variable "location" {
-  description = "GCP Location"
+variable "gcs_location" {
+  description = "Location"
   type        = string
   default     = "australia-southeast1"
 }
 
-variable "project" {
+variable "gcs_project" {
   description = "Project"
   type        = string
-  default     = "terraform-485110"
+  default     = "ptv-metro-service-updates"
 }
 
-variable "region" {
-  description = "GCP Region"
+variable "gcs_region" {
+  description = "Region"
   type        = string
   default     = "australia-southeast1-a"
 }
 
-variable "credentials" {
+variable "gcs_credentials" {
   description = "Path to GCP credentials JSON file"
   type        = string
   default     = "./.gc/credentials.json"

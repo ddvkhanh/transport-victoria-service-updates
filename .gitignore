@@ -27,3 +27,4 @@ output/
 
 #Credentials file for Google Cloud
 credentials.json
+.env_encoded
