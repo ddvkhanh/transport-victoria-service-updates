@@ -67,17 +67,14 @@ def get_enum_name(enum_type, value):
     
 
 def save_records(records):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    output_path = os.path.join(
-        OUTPUT_DIR,
-        f"service_updates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ndjson"
-    )
+    output_path = f"service_updates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ndjson"
 
     with open(output_path, "w", encoding="utf-8") as f:
         for record in records:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
     print(f"Saved {len(records)} records to: {output_path}")
+
 
 
 def extract_informed_entities(alert):
@@ -129,7 +126,8 @@ def fetch_and_parse_record(feed):
         record = {
             "entity_timestamp": to_iso_or_none(feed.header.timestamp) if feed.header.timestamp else None,
             "entity_id": entity.id,
-            "alert": extract_alert_record(entity.alert) if entity.HasField("alert") else None
+            "alert": extract_alert_record(entity.alert) if entity.HasField("alert") else None,
+            "ingest_timestamp": to_iso_or_none(int(datetime.now(timezone.utc).timestamp()))        
         }
         records.append(record)
 
