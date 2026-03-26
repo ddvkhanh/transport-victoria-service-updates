@@ -126,7 +126,8 @@ def fetch_and_parse_record(feed):
         record = {
             "entity_timestamp": to_iso_or_none(feed.header.timestamp) if feed.header.timestamp else None,
             "entity_id": entity.id,
-            "alert": extract_alert_record(entity.alert) if entity.HasField("alert") else None
+            "alert": extract_alert_record(entity.alert) if entity.HasField("alert") else None,
+            "ingest_timestamp": to_iso_or_none(int(datetime.now(timezone.utc).timestamp()))        
         }
         records.append(record)
 

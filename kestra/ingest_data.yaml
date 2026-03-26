@@ -2,6 +2,11 @@ id: transport_vic_service_updates_metro
 namespace: captone_project
 description: "Ingest and process near real-time metro service updates from the PTV API, extracting key fields for analysis and storage."
 
+variables:
+  file: "service_updates_metro_{{ execution.startDate | date('yyyyMMdd_HHmmss') }}.ndjson"
+  gcs_file: "gs://{{ kv('GCP_BUCKET_NAME') }}/raw/{{ vars.file }}"
+  table: "{{ kv('GCP_PROJECT_ID') }}.{{ kv('GCP_DATASET') }}.service_updates_metro"
+
 tasks:
   - id: ingest_metro_updates
     type: io.kestra.plugin.scripts.python.Commands
@@ -17,8 +22,39 @@ tasks:
       - gtfs-realtime-bindings
       - protobuf
       - python-dotenv
+
     commands:
       - python ingest_data.py
-
     outputFiles:
       - "*.ndjson"
+
+  - id: upload_to_gcs
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{ outputs.ingest_metro_updates.outputFiles | values | first }}"
+    to: "{{ render(vars.gcs_file) }}"
+
+  - id: load_to_bigquery
+    type: io.kestra.plugin.gcp.bigquery.LoadFromGcs
+    from:
+      - "{{ render(vars.gcs_file) }}"
+    destinationTable: "{{ render(vars.table) }}"
+    format: JSON
+    writeDisposition: WRITE_APPEND
+    createDisposition: CREATE_NEVER
+
+  - id: purge_files
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+    description: "Remove execution files from Kestra internal storage"
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{ secret('GCP_SERVICE_ACCOUNT') }}"
+      projectId: "{{ kv('GCP_PROJECT_ID') }}"
+      location: "{{ kv('GCP_LOCATION') }}"
+      bucket: "{{ kv('GCP_BUCKET_NAME') }}"
+
+triggers:
+  - id: schedule_trigger
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/15 * * * *"

@@ -16,8 +16,11 @@ __pycache__/
 #Python virtual environment
 venv/
 
-#Ignore the .env file that contains API keys and sensitive information
+#Ignore the credentials file that contains API keys and sensitive information
 .env
+credentials.json
+.env_encoded
+
 
 #Ignore the SQLite database file if it exists
 database.db
@@ -25,6 +28,13 @@ database.db
 #Ignore the output directory for processed data
 output/
 
-#Credentials file for Google Cloud
-credentials.json
-.env_encoded
+
+# Local .terraform directories
+.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Ignore transient lock info files created by terraform apply
+.terraform.tfstate.lock.info

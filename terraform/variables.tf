@@ -1,4 +1,4 @@
-variable "transport-vic-sv-updates-metro" {
+variable "dataset_name" {
   description = "Transport Victoria Service Updates for Metro"
   type        = string
   default     = "ptv_metro_dataset"
@@ -39,5 +39,12 @@ variable "gcs_region" {
 variable "gcs_credentials" {
   description = "Path to GCP credentials JSON file"
   type        = string
-  default     = "./.gc/credentials.json"
+  default     = "~/.gc/gcloud-creds.json"
+}
+
+
+variable "big_query_table_name" {
+  description = "Big query table name"
+  type        = string
+  default     = "service_updates_metro"
 }
