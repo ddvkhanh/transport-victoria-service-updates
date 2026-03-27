@@ -16,7 +16,7 @@ tasks:
       PTV_KEYID: "{{ secret('PTV') }}"
     taskRunner:
       type: io.kestra.plugin.scripts.runner.docker.Docker
-    containerImage: python:3.13-slim
+    containerImage: python:3.12.13-slim
     dependencies:
       - requests
       - gtfs-realtime-bindings
