@@ -1,0 +1,112 @@
+version: 1
+
+models:
+  - name: dim_agency
+    description: "Dimension table for transit agencies"
+    columns:
+      - name: agency_id
+        description: "Unique identifier for the transit agency"
+        data_tests:
+          - not_null
+      - name: agency_name
+        description: "Name of the transit agency"
+      - name: agency_url
+        description: "URL of the transit agency's website"
+      - name: agency_timezone
+        description: "Timezone of the transit agency"
+      - name: agency_lang
+        description: "Language used by the transit agency"
+  - name: dim_routes
+    description: "Dimension table for transit routes"
+    columns:
+      - name: route_id
+        description: "Unique identifier for the transit route"
+        data_tests:
+          - not_null
+      - name: agency_id
+        description: "Identifier for the agency that operates the route"
+      - name: route_short_name
+        description: "Short name or number of the route"
+      - name: route_long_name
+        description: "Full name of the route"
+      - name: route_type
+        description: "Type of the route (e.g., subway, light rail)"
+      - name: route_color
+        description: "Color associated with the route for visualization"
+      - name: route_text_color
+        description: "Text color for the route when visualized"
+  
+  - name: dim_stops
+    description: "Dimension table for transit stops"
+    columns:
+      - name: stop_id
+        description: "Unique identifier for the transit stop"
+        data_tests:
+          - not_null
+      - name: stop_name
+        description: "Name of the transit stop"
+      - name: stop_lat
+        description: "Latitude of the transit stop"
+      - name: stop_lon
+        description: "Longitude of the transit stop"
+      - name: parent_station
+        description: "Identifier for the parent station if this stop is part of a larger station complex"
+      - name: level_id
+        description: "Identifier for the level of the stop (e.g., platform level, concourse level)"
+      - name: wheelchair_boarding
+        description: "Indicates whether wheelchair boarding is available at this stop (0 = no information, 1 = available, 2 = not available)"
+  
+  - name: fct_service_update_impacts
+    description: "Fact table for service updates"
+    columns:
+      - name: service_update_route_sk
+        description: "Surrogate key for the service update by route"
+        data_tests:
+          - not_null
+          - unique
+      - name: entity_id
+        description: "Unique identifier for the service update entity"
+        data_tests:
+          - not_null
+      - name: entity_timestamp
+        description: "Timestamp when the service update entity was created or last updated"
+        data_tests:
+          - not_null
+      - name: informed_entity_index
+        description: "Index of the informed entity within the service update"
+      - name: description_text
+        description: "Description of the service update"
+      - name: cause
+        description: "Cause of the service update"
+      - name: effect
+        description: "Effect of the service update on transit operations"
+      - name: active_period_start
+        description: "Start time of the active period for the service update"
+      - name: active_period_end
+        description: "End time of the active period for the service update"
+      - name: header_text
+        description: "Header text for the service update"
+      - name: severity_level
+        description: "Severity level of the service update"
+      - name: agency_id
+        description: "Identifier for the agency associated with the service update"
+      - name: direction_id
+        description: "Direction identifier for the service update (e.g., 0 = outbound, 1 = inbound)"
+      - name: route_id
+        description: "Identifier for the route associated with the service update"
+      - name: route_short_name
+        description: "Short name or number of the route associated with the service update"
+      - name: route_long_name
+        description: "Full name of the route associated with the service update"
+      - name: route_type
+        description: "Type of the route associated with the service update (e.g., subway, light rail)"
+      - name: route_color
+        description: "Color associated with the route for visualization"
+      - name: stop_id
+        description: "Identifier for the stop associated with the service update, if applicable"
+      - name: stop_name
+        description: "Name of the stop associated with the service update, if applicable"
+      - name: agency_name
+        description: "Name of the agency associated with the service update"
+
+    

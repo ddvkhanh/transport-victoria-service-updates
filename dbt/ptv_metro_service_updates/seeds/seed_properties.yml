@@ -1,0 +1,65 @@
+seeds:
+  - name: metro_agency
+    description: "Static information about the metro agency"
+    columns:
+      - name: agency_id
+        description: "Unique identifier for the agency"
+        data_tests:
+          - not_null
+          - unique
+      - name: agency_name
+        description: "Name of the metro agency"
+      - name: agency_url
+        description: "URL of the metro agency's website"
+      - name: agency_timezone
+        description: "Timezone of the metro agency"
+      - name: agency_lang
+        description: "Language used by the metro agency"
+      - name: agency_fare_url
+        description: "URL of the metro agency's fare information"
+  - name: metro_routes
+    description: "Static information about metro routes"
+    columns:
+      - name: route_id
+        description: "Unique identifier for the route"
+        data_tests:
+          - not_null
+          - unique
+      - name: agency_id
+        description: "Identifier for the agency that operates the route"
+      - name: route_short_name
+        description: "Short name or number of the route"
+      - name: route_long_name
+        description: "Full name of the route"
+      - name: route_type
+        description: "Type of the route (e.g., subway, light rail)"
+      - name: route_color
+        description: "Color associated with the route for visualization"
+      - name: route_text_color
+        description: "Text color for the route when visualized"
+  - name: metro_stops
+    description: "Static information about metro stops"
+    columns:
+      - name: stop_id
+        description: "Unique identifier for the stop"
+        data_tests:
+          - not_null
+          - unique
+      - name: stop_name
+        description: "Name of the stop"
+      - name: stop_lat
+        description: "Latitude of the stop"
+      - name: stop_lon
+        description: "Longitude of the stop"
+      - name: stop_url
+        description: "URL of the stop information page"
+      - name: location_type
+        description: "Type of the stop location (e.g., station, platform)" 
+      - name: parent_station
+        description: "Identifier for the parent station if this stop is part of a larger station complex"
+      - name: wheelchair_boarding
+        description: "Accessibility information for the stop (0 = no information, 1 = accessible, 2 = not accessible)"
+      - name: level_id
+        description: "Identifier for the level of the stop within a station complex, if applicable" 
+      - name: platform_code
+        description: "Code for the platform at the stop, if applicable"

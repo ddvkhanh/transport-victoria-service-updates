@@ -1,0 +1,61 @@
+version: 1
+
+models:
+  - name: int_service_updates_lates_impacts
+    description: "Intermediate model for latest service update impacts"
+    columns:
+      - name: entity_id
+        description: "Unique identifier for the service update impact"
+      - name: entity_timestamp
+        description: "Timestamp when the service update impact was recorded"
+      - name: ingest_timestamp
+        description: "Timestamp when the service update impact was ingested into the system"
+      - name: cause
+        description: "Cause of the service disruption"
+      - name: effect
+        description: "Effect of the service disruption"
+      - name: description_text
+        description: "Description of the service disruption"
+      - name: header_text
+        description: "Header text for the service disruption"
+      - name: severity_level
+        description: "Severity level of the service disruption"
+      - name: informed_entity_index
+        description: "Index of the informed entity within the service update impact"
+      - name: agency_id
+        description: "Identifier for the agency associated with the service disruption"
+      - name: direction_id
+        description: "Direction identifier for the service disruption (e.g., 0 = outbound, 1 = inbound)"
+      - name: route_id
+        description: "Identifier for the route associated with the service disruption"
+      - name: stop_id
+        description: "Identifier for the stop associated with the service disruption"
+      - name: active_period_index
+        description: "Index of the active period within the service update impact"
+      - name: active_period_start
+        description: "Start time of the active period for the service disruption"
+      - name: active_period_end
+        description: "End time of the active period for the service disruption"
+    
+  - name: int_service_updates_latest_base
+    description: "Intermediate model for latest service updates base"
+    columns:
+      - name: entity_id
+        description: "Unique identifier for the service update"
+      - name: entity_timestamp
+        description: "Timestamp when the service update was recorded"
+      - name: ingest_timestamp
+        description: "Timestamp when the service update was ingested into the system"
+      - name: alert_json
+        description: "Raw JSON data for the service update alert"
+      - name: cause
+        description: "Cause of the service disruption"
+      - name: effect
+        description: "Effect of the service disruption"
+      - name: description_text
+        description: "Description of the service disruption"
+      - name: header_text
+        description: "Header text for the service disruption"
+      - name: severity_level
+        description: "Severity level of the service disruption"
+

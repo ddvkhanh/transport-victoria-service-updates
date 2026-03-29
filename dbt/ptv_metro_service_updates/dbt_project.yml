@@ -1,0 +1,48 @@
+name: 'ptv_metro_service_updates'
+version: '1.0.0'
+
+profile: 'ptv_metro_service_updates'
+
+config-version: 2
+
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.1.1
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+models:
+  ptv_metro_service_updates:
+    staging:
+      +materialized: view
+      +schema: staging
+
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  ptv_metro_service_updates:
+    +schema: reference
+    
+    metro_agency:
+      +column_types:
+        agency_id: string
+
+    metro_routes:
+      +column_types:
+        route_id: string
+        agency_id: string
+

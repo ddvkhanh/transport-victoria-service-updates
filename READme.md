@@ -33,7 +33,7 @@ The pipeline uses a **micro-batch approach (every 15 minutes)** to achieve near 
 
 ## Prerequisites
 
-- Python 3.13  
+- Python 3.12 
 - uv  
 - Google Cloud account  
 - Google Cloud CLI (gcloud)  

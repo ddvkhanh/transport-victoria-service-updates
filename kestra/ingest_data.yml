@@ -1,0 +1,99 @@
+id: transport_vic_service_updates_metro
+namespace: captone_project
+description: "Ingest and process near real-time metro service updates from the PTV API, extracting key fields for analysis and storage."
+
+variables:
+  file: "service_updates_metro_{{ execution.startDate | date('yyyyMMdd_HHmmss') }}.ndjson"
+  gcs_file: "gs://{{ kv('GCP_BUCKET_NAME') }}/raw/{{ vars.file }}"
+  table: "{{ kv('GCP_PROJECT_ID') }}.{{ kv('GCP_DATASET') }}.service_updates_metro"
+
+tasks:
+  - id: ingest_metro_updates
+    type: io.kestra.plugin.core.flow.WorkingDirectory
+    tasks:
+      - id: clone_ingest_repo
+        type: io.kestra.plugin.git.Clone
+        url: https://github.com/ddvkhanh/transport-victoria-service-updates
+        branch: master
+
+      - id: python
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+        env:
+          PTV_KEYID: "{{ secret('PTV') }}"
+        dependencies:
+          - requests
+          - gtfs-realtime-bindings
+          - protobuf
+          - python-dotenv
+        commands:
+          - python app/ingest_data.py
+        outputFiles:
+          - "*.ndjson"
+
+  - id: upload_to_gcs
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{ outputs.python.outputFiles | values | first }}"
+    to: "{{ render(vars.gcs_file) }}"
+
+  - id: load_to_bigquery
+    type: io.kestra.plugin.gcp.bigquery.LoadFromGcs
+    from:
+      - "{{ render(vars.gcs_file) }}"
+    destinationTable: "{{ render(vars.table) }}"
+    format: JSON
+    writeDisposition: WRITE_APPEND
+    createDisposition: CREATE_NEVER
+  
+  - id: dbt_transformation
+    type: io.kestra.plugin.core.flow.WorkingDirectory
+    tasks:
+      - id: clone_dbt_repo
+        type: io.kestra.plugin.git.Clone
+        url: https://github.com/ddvkhanh/transport-victoria-service-updates
+        branch: master
+
+      - id: dbt_build
+        type: io.kestra.plugin.dbt.cli.DbtCLI
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+        containerImage: ghcr.io/kestra-io/dbt-bigquery:latest
+        projectDir: dbt/ptv_metro_service_updates
+        inputFiles:
+          creds.json: "{{ secret('GCP_SERVICE_ACCOUNT') }}"
+        profiles: |
+          ptv_metro_service_updates:
+            outputs:
+              prod:
+                type: bigquery
+                dataset: ptv_metro_dataset
+                project: ptv-metro-service-updates
+                keyfile: creds.json
+                location: australia-southeast1
+                method: service-account
+                priority: interactive
+                threads: 16
+                timeout_seconds: 300
+                fixed_retries: 1
+            target: prod
+        commands:
+          - dbt deps
+          - dbt build
+
+  - id: purge_files
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+    description: "Remove execution files from Kestra internal storage"
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{ secret('GCP_SERVICE_ACCOUNT') }}"
+      projectId: "{{ kv('GCP_PROJECT_ID') }}"
+      location: "{{ kv('GCP_LOCATION') }}"
+      bucket: "{{ kv('GCP_BUCKET_NAME') }}"
+
+triggers:
+  - id: schedule_trigger
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/15 * * * *"

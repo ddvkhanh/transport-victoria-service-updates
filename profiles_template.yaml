@@ -1,0 +1,21 @@
+your_project_name:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      keyfile: /path/to/your/service-account-key.json # Absolute path to your JSON key file
+      project: your-gcp-project-id # Your Google Cloud Project ID
+      dataset: my_dataset # The BigQuery dataset name you created
+      threads: 4
+      timeout_seconds: 300
+      location: US # Optional: The location of your dataset (e.g., EU, us-west2)
+    prod:
+      type: bigquery
+      method: service-account
+      keyfile: /path/to/your/service-account-key.json # Absolute path to your JSON key file
+      project: your-gcp-project-id # Your Google Cloud Project ID
+      dataset: my_dataset # The BigQuery dataset name you created
+      threads: 4
+      timeout_seconds: 300
+      location: US # Optional: The location of your dataset (e.g., EU, us-west2)
