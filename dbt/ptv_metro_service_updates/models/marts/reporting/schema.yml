@@ -1,0 +1,19 @@
+version: 1
+
+models:
+  - name: distribution_of_disruptions_over_time
+    description: "Distribution of disruptions over time"
+    columns:
+      - name: disruption_date
+        description: "Date of the disruption"
+      - name: effect
+        description: "Effect of the disruption (e.g., delay, cancellation)"
+      - name: disruption_count
+        description: "Number of disruptions for the given date and effect"
+  - name: distribution_of_disruption_effects
+    description: "Distribution of disruption effects"
+    columns:
+      - name: effect
+        description: "Effect of the disruption (e.g., delay, cancellation)"
+      - name: disruption_count
+        description: "Number of disruptions for the given effect"

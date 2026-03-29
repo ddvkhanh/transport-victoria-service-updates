@@ -14,6 +14,7 @@ import sys
 # Load environment variables from .env file
 load_dotenv()
 
+
 # Configuration
 API_URL = "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/metro/trip-updates"
 API_KEY = os.getenv("YARRA_TRAMS_KEYID")

@@ -25,9 +25,6 @@ credentials.json
 #Ignore the SQLite database file if it exists
 database.db
 
-#Ignore the output directory for processed data
-output/
-
 
 # Local .terraform directories
 .terraform/

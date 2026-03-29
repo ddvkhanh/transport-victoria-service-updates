@@ -67,8 +67,10 @@ def get_enum_name(enum_type, value):
     
 
 def save_records(records):
-    output_path = f"service_updates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ndjson"
-
+    output_path = os.path.join(
+        os.getcwd(),
+        f"service_updates_metro_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ndjson"
+    )
     with open(output_path, "w", encoding="utf-8") as f:
         for record in records:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -99,17 +101,16 @@ def extract_active_periods(alert):
     return periods
 
 
-def extract_alert_record(alert):
-        alert = {
-            "header_text": translate_text(alert.header_text) if alert.HasField("header_text") else None,
-            "description_text": translate_text(alert.description_text) if alert.HasField("description_text") else None,
-            "severity_level": get_enum_name(gtfs_realtime_pb2.Alert.SeverityLevel, alert.severity_level) if alert.HasField("severity_level") else None,
-            "cause": get_enum_name(gtfs_realtime_pb2.Alert.Cause, alert.cause) if alert.HasField("cause") else None,
-            "effect": get_enum_name(gtfs_realtime_pb2.Alert.Effect, alert.effect) if alert.HasField("effect") else None,
-            "informed_entities": extract_informed_entities(alert),
-            "active_periods": extract_active_periods(alert)
-        }
-        return alert
+def extract_alert_record(alert_proto):
+    return {
+        "header_text": translate_text(alert_proto.header_text) if alert_proto.HasField("header_text") else None,
+        "description_text": translate_text(alert_proto.description_text) if alert_proto.HasField("description_text") else None,
+        "severity_level": get_enum_name(gtfs_realtime_pb2.Alert.SeverityLevel, alert_proto.severity_level) if alert_proto.HasField("severity_level") else None,
+        "cause": get_enum_name(gtfs_realtime_pb2.Alert.Cause, alert_proto.cause) if alert_proto.HasField("cause") else None,
+        "effect": get_enum_name(gtfs_realtime_pb2.Alert.Effect, alert_proto.effect) if alert_proto.HasField("effect") else None,
+        "informed_entities": extract_informed_entities(alert_proto),
+        "active_periods": extract_active_periods(alert_proto)
+    }
 
 
 def fetch_and_parse_record(feed):

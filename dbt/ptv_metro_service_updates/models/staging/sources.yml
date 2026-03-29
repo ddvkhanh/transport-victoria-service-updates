@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: raw_data
+    database: "ptv-metro-service-updates"
+    schema: "ptv_metro_dataset"
+    tables:
+      - name: service_updates_metro
+        description: "Raw service alerts data from PTV API"
+        columns:
+          - name: entity_id
+            description: "Unique identifier for the service update entity"
+            data_tests:
+              - not_null
+          - name: entity_timestamp
+            description: "This timestamp identifies the moment when the content of this feed has been created (in server time)"
+            data_tests:
+              - not_null
+          - name: ingest_timestamp
+            description: "Timestamp when the data was ingested into BigQuery"
+          - name: alert
+            description: "The alert object containing details about the service update"
