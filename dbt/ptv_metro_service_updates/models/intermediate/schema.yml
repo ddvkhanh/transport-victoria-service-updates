@@ -1,7 +1,7 @@
 version: 1
 
 models:
-  - name: int_service_updates_lates_impacts
+  - name: int_service_updates_latest_impacts
     description: "Intermediate model for latest service update impacts"
     columns:
       - name: entity_id
