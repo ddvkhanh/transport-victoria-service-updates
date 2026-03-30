@@ -1,10 +1,10 @@
-# Transport Victoria Service Updates Data Pipeline
+# Transport Victoria (Australia) Service Updates Data Pipeline
 
 ## 1. Problem Description
 
-Commuters and transport analysts in Victoria lack a consolidated, historical view of public transport disruptions. While real-time data is available via the PTV API, there is no built-in historical tracking. This means that public transport disruptions (e.g., maintenance, incidents, events) are difficult to analyze over time. 
+Commuters and transport analysts in the state of Victoria (Australia) lack a consolidated, historical view of public transport disruptions. While real-time data is available via the PTV API, there is no built-in historical tracking. This means that public transport disruptions (e.g., maintenance, incidents, events) are difficult to analyze over time. 
 
-This project solves this problem by building an end-to-end data pipeline that continuously ingests GTFS Realtime data (Metro Trains, Victoria), building a data lake and data warehouse, enabling users to:
+This project solves this problem by building an end-to-end data pipeline that continuously ingests GTFS Realtime data (Metro Trains, Victoria). It establishes a data lake and data warehouse, enabling users to:
 - Track the historical frequency of service disruptions.
 - Understand the types and impact of different incidents.
 - Analyze how disruptions vary across different times of day and across different routes.
@@ -13,7 +13,19 @@ By using a micro-batch approach (every 15 minutes), the pipeline achieves near r
 
 ---
 
-## 2. Tech Stack
+## 2. Data Source Overview
+
+The GTFS Realtime Metro Train Service Alerts data feed provides real-time information about planned and unplanned disruptions affecting metropolitan train services. This includes cancellations or unforeseen events affecting a station, route, or the entire network in Melbourne, Victoria. 
+*Note: This API endpoint has a rate limit of 24 calls per minute and a caching time of 30 seconds.*
+
+- [API URL](https://opendata.transport.vic.gov.au/dataset/2d9a7228-5b81-40d3-8075-ae7a3da42198/resource/2a90e184-ac14-468a-92ff-9618cb43fb77/download/gtfsr_metro_train_service_alerts.openapi.json)
+- [Data Dictionary](https://opendata.transport.vic.gov.au/dataset/gtfs-realtime/resource/2a90e184-ac14-468a-92ff-9618cb43fb77)
+
+This API returns a response in **Protocol Buffer (.pb)** format.
+
+---
+
+## 3. Tech Stack
 
 - **Cloud**: Google Cloud Platform (GCP)
 - **Infrastructure as Code (IaC)**: Terraform
@@ -26,7 +38,7 @@ By using a micro-batch approach (every 15 minutes), the pipeline achieves near r
 
 ---
 
-## 3. Project Structure
+## 4. Project Structure
 
 ```text
 transport-victoria-service-updates/
@@ -51,7 +63,7 @@ transport-victoria-service-updates/
 
 ---
 
-## 4. Cloud & Infrastructure (IaC)
+## 5. Cloud & Infrastructure (IaC)
 
 The project is developed entirely in the cloud using **Google Cloud Platform (GCP)**. 
 Infrastructure is provisioned using **Terraform**, which manages the creation of the GCS bucket (Data Lake) and the BigQuery dataset and base tables (Data Warehouse).
@@ -60,57 +72,72 @@ Infrastructure is provisioned using **Terraform**, which manages the creation of
 
 ---
 
-## 5. Data Ingestion & Workflow Orchestration
+## 6. Data Ingestion & Workflow Orchestration
 
 The project implements an end-to-end batch/micro-batch pipeline orchestrated via a single DAG in **Kestra**. Orchestration includes multiple integrated steps:
+
 1. **Extraction**: A Python script is executed to fetch the latest GTFS Realtime data from the PTV API.
-2. **Data Lake**: The raw JSON data format is uploaded directly to **Google Cloud Storage (GCS)**.
-3. **Data Warehouse**: Kestra loads the raw data from GCS directly into **BigQuery**.
-4. **Transformation**: Kestra triggers a `dbt build` command inside a Docker container to model the newly loaded data.
+2. **Data Lake**: The newly extracted data is uploaded directly to **Google Cloud Storage (GCS)** as a newline-delimited JSON (`.ndjson`) file.
+3. **Data Warehouse**: Kestra natively loads this raw `.ndjson` data from GCS directly into a base table in **BigQuery**.
+4. **Transformation**: Kestra triggers a `dbt build` command inside a specialized Docker container to immediately process and model the newly loaded data.
 
 ![Kestra Flow](./images/kestra_flow.png)
 
----
-
-## 6. Data Warehouse
-
-The Data Warehouse is hosted on **BigQuery**. 
-The base tables for raw data are provisioned directly by Terraform and are **partitioned by `entity_timestamp` (DAY)**. 
-
-**Optimization Explanation:** Partitioning the tables by day is optimal for the upstream queries because dashboard filtering and analytical queries almost exclusively filter or aggregate disruption events based on the date they occurred. This heavily reduces the amount of data scanned by Looker Studio and dbt during processing, improving query performance and significantly saving computing costs.
+*For more details on how each integration works, please refer to [`kestra/README.md`](./kestra/README.md).*
 
 ---
 
-## 7. Transformations (dbt)
+## 7. Data Warehouse
 
-Data transformations are fully defined using **dbt**. The pipeline does not rely on simple SQL scripts, but leverages a robust data modeling structure:
-- **Staging**: Raw nested JSON alerts from BigQuery are unpacked into relational staging views (`stg_service_alerts_base`, etc.).
-- **Intermediate**: Business logic is applied to join active periods and entities.
-- **Marts**: A final, materialized fact table (`fct_service_update_impacts`) is generated and enriched with proper metadata from seed dimensional tables (stops, routes, agencies) for the dashboard. *Utilizes the `dbt_utils` package (e.g., for generating surrogate keys).*
-- **Testing**: Integrates automated data quality checks via `schema.yml` constraints (`not_null`, `unique`) and custom SQL data tests inside the `tests/` directory.
+The Data Warehouse is hosted entirely on **BigQuery**. The foundation of this warehouse involves raw base tables provisioned directly via Terraform, which are strategically **partitioned by `entity_timestamp` (DAY)**.
 
-Below is the screenshot from BigQuery showing the transformed data structure:
+To keep data efficiently organized and logically separated, the warehouse utilizes the following schema structure:
+- **Raw Layer** (`ptv_metro_dataset`): Contains the raw, un-transformed data directly from GCS (e.g., the `service_updates_metro` table).
+- **Staging Layer** (`ptv_metro_staging`): Houses the initial staging models where raw JSON data is unpacked and standardized.
+- **Intermediate Layer** (`ptv_metro_intermediate`): Stores intermediate models where business logic and join operations are applied.
+- **Marts Layer** (`ptv_metro_marts`): Contains the final, aggregated fact and dimension tables ready for dashboard consumption.
+
+**Optimization Note:** Day-level partitioning on the raw data table is crucial for efficiency. Because dashboard filters and downstream dbt analytical queries overwhelmingly aggregate disruptions based on their occurrence date, partitioning drastically reduces the volume of data scanned. This significantly improves query execution speeds and minimizes compute costs.
 
 ![BigQuery Transformed Data](./images/bigquery.png)
 
-More details in `dbt/ptv_metro_service_updates/README.md`
 ---
 
-## 8. Dashboard
+## 8. Transformations (dbt)
+
+Data transformations are fully managed and defined using **dbt**. Instead of relying on manual SQL scripts, the pipeline leverages dbt's modular, layered data modeling architecture to ensure clean, tested, and reliable datasets:
+
+- **Staging**: The raw, nested JSON alerts ingested into BigQuery are unpacked, flattened, and cast into standardized relational views (e.g., `stg_service_alerts_base`).
+- **Intermediate**: Complex business logic is applied here to cleanly join active alert periods with the specific entities (routes/stops) they affect.
+- **Marts**: The final layer produces materialized, aggregated fact tables (e.g., `fct_service_update_impacts`) optimized exclusively for reporting. This layer is heavily enriched with contextual metadata by joining dimensional seed data (stops, routes, agencies). *Note: The `dbt_utils` package is utilized here for generating surrogate keys.*
+- **Testing**: Automated data quality checks are built-in. Standard constraints (`not_null`, `unique`) are enforced via `schema.yml`, while custom SQL validation logic is maintained inside the `tests/` directory to safeguard dashboard integrity.
+
+Below is a visualization excerpt of the dbt pipeline lineage:
+
+![dbt lineage](dbt-diagram.png)
+
+*For comprehensive documentation of individual models and schema structures, please explore the dedicated [`dbt/README.md`](./dbt/ptv_metro_service_updates/README.md).*
+
+---
+
+## 9. Dashboard
 
 The final transformed data in BigQuery is visualized using a **Looker Studio** dashboard containing two main tiles:
-1. **Most Frequent Service Disruption Effects**: Highlights the specific types of impacts (e.g., delays, alterations) across different train lines.
-2. **Number of Impacted Routes by Disruption Cause Over Time**: Shows the frequency and timeline of incidents to help spot historical trends.
+
+1. **Most Frequent Service Disruption Effects**: Highlights the distribution of specific disruption impacts (e.g., delays, cancellations, platform alterations) across different train lines. Ranking these effects helps identify the most common types of disruptions, allowing for a better assessment of the overall stability and reliability of the service.
+2. **Number of Impacted Routes by Disruption Cause Over Time**: Visualizes the frequency and historical timeline of disruption incidents. Documenting these time-series trends helps pinpoint exactly when severe disruptions typically occur and how many routes are impacted simultaneously, providing crucial data to help planners proactively arrange service replacements and minimize passenger inconvenience.
 
 The data powering these visualizations is sourced directly from the final aggregate models located in the `dbt/ptv_metro_service_updates/models/marts/reporting` folder.
 
 ![Looker Studio Dashboard](./images/visualization.png)
 
+To access the interactive dashboard, please visit the following link:
+
 [Looker Studio URL](https://lookerstudio.google.com/reporting/b3525a7f-02d2-4673-8b36-7463d9abfc26/page/p_123456789)
 
 ---
 
-## 9. Reproducibility: How to Run the Code
+## 10. Reproducibility: How to Run the Code
 
 These instructions provide a straightforward way to spin up the entire project locally and on the cloud.
 
@@ -142,7 +169,7 @@ Register for the [PTV API](https://www.ptv.vic.gov.au/footer/data-and-reporting/
 ```env
 PTV_KEYID=<your-api-key>
 ```
-*Note: for documentation on creating the account and API key, visit [PTV Help & Support] (https://opendata.transport.vic.gov.au/Help-And-Support)
+*Note: For documentation on creating the account and API key, visit [PTV Help & Support](https://opendata.transport.vic.gov.au/Help-And-Support).*
 
 ### Step 3: GCP Setup
 
@@ -216,7 +243,7 @@ Kestra manages both data ingestion and dbt execution. You must ensure the config
    - `PTV`: Your PTV API Key, base64 encoded. (e.g., `echo -n "your-api-key" | base64`)
    - `GCP_SERVICE_ACCOUNT`: The contents of your GCP `credentials.json` base64 encoded. (Follow [Kestra GCP Instructions](https://kestra.io/docs/how-to-guides/google-credentials) for proper secret manager configuration).
 
-   Add these 2 base64 encoded values to `.env_encoded` file in the source location.
+   Add these 2 base64 encoded values to a `.env_encoded` file in the root directory:
    ```env
    PTV=<base64-encoded-ptv-api-key>
    GCP_SERVICE_ACCOUNT=<base64-encoded-gcp-service-account>
@@ -239,3 +266,12 @@ If you wish to develop and test dbt models locally outside of Kestra:
 4. Ensure the root profile block name in your `~/.dbt/profiles.yml` exactly matches the `profile:` setting defined inside `dbt/ptv_metro_service_updates/dbt_project.yml` (which currently seeks the profile named `ptv_metro_service_updates`).
 
 5. Run `dbt debug` from inside your `dbt/ptv_metro_service_updates` directory to verify your local connection to BigQuery.
+
+---
+
+## 11. Future Improvements
+
+As the platform scales, the following optimizations and architectural enhancements should be considered:
+
+- **Cost & Storage Optimization**: To prevent the raw data landing zone from becoming a data swamp and compounding storage costs, the Terraform configuration applies a lifecycle policy to the GCS bucket that automatically deletes raw `.ndjson` files older than 3 days. Since the data is immediately loaded into BigQuery during the pipeline execution, this perfectly minimizes long-term storage costs.
+- **Incremental Data Loading**: Currently, the dbt transformations may be rebuilding fact tables via full-refresh or simple materializations. As the historical dataset inside BigQuery grows significantly larger over time, transitioning the core dbt models (such as `fct_service_update_impacts`) to use `incremental` materializations will be essential. This will restrict data transformations to only newly appended records, drastically reducing BigQuery compute costs and query execution times.
