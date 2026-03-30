@@ -1,8 +1,8 @@
-# Transport Victoria Service Updates Data Pipeline
+# Transport Victoria (Australia) Service Updates Data Pipeline
 
 ## 1. Problem Description
 
-Commuters and transport analysts in Victoria lack a consolidated, historical view of public transport disruptions. While real-time data is available via the PTV API, there is no built-in historical tracking. This means that public transport disruptions (e.g., maintenance, incidents, events) are difficult to analyze over time. 
+Commuters and transport analysts in the state of Victoria (Australia) lack a consolidated, historical view of public transport disruptions. While real-time data is available via the PTV API, there is no built-in historical tracking. This means that public transport disruptions (e.g., maintenance, incidents, events) are difficult to analyze over time. 
 
 This project solves this problem by building an end-to-end data pipeline that continuously ingests GTFS Realtime data (Metro Trains, Victoria), building a data lake and data warehouse, enabling users to:
 - Track the historical frequency of service disruptions.
@@ -23,6 +23,16 @@ By using a micro-batch approach (every 15 minutes), the pipeline achieves near r
 - **Data Transformation**: dbt (Data Build Tool)
 - **Dashboard**: Looker Studio
 - **Language**: Python (environment managed by `uv`)
+
+---
+
+## Data Source Overview
+GTFS Realtime Metro Train Service Alerts data feed provides real time information about planned and unplanned disruptions affecting metropolitan train services including cancellations or unforeseen events affecting a station, route or the entire network in Melbourne, Victoria. Note: This API endpoint has a rate limit of 24 calls per minute and caching time of 30 seconds.
+[API URL] (https://opendata.transport.vic.gov.au/dataset/2d9a7228-5b81-40d3-8075-ae7a3da42198/resource/2a90e184-ac14-468a-92ff-9618cb43fb77/download/gtfsr_metro_train_service_alerts.openapi.json)
+
+This API would return a response in Protocol Buffer (.pb) format.
+
+[Data Dictionary](https://opendata.transport.vic.gov.au/dataset/gtfs-realtime/resource/2a90e184-ac14-468a-92ff-9618cb43fb77)
 
 ---
 
