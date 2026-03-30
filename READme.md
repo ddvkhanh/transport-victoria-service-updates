@@ -1,8 +1,8 @@
-# Transport Victoria Service Updates Data Pipeline
+# Transport Victoria (Australia) Service Updates Data Pipeline
 
 ## 1. Problem Description
 
-Commuters and transport analysts in Victoria lack a consolidated, historical view of public transport disruptions. While real-time data is available via the PTV API, there is no built-in historical tracking. This means that public transport disruptions (e.g., maintenance, incidents, events) are difficult to analyze over time. 
+Commuters and transport analysts in the state of Victoria (Australia) lack a consolidated, historical view of public transport disruptions. While real-time data is available via the PTV API, there is no built-in historical tracking. This means that public transport disruptions (e.g., maintenance, incidents, events) are difficult to analyze over time. 
 
 This project solves this problem by building an end-to-end data pipeline that continuously ingests GTFS Realtime data (Metro Trains, Victoria). It establishes a data lake and data warehouse, enabling users to:
 - Track the historical frequency of service disruptions.
