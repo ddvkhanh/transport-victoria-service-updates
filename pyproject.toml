@@ -10,4 +10,5 @@ dependencies = [
     "gtfs-realtime-bindings>=2.0.0",
     "protobuf>=6.33.6",
     "requests>=2.33.0",
+    "streamlit>=1.56.0",
 ]
