@@ -1,11 +1,4 @@
 import streamlit as st
-# 1. import streamlit
-# 2. set page config
-# 3. define page objects
-# 4. define navigation
-# 5. render shared sidebar text
-# 6. run selected page
-
 
 st.set_page_config(
     page_title="Transport Victoria Service Updates - Metro",

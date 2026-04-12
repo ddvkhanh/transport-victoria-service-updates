@@ -20,9 +20,4 @@ def run_query(query):
     rows = [dict(row) for row in rows_raw]
     return rows
 
-rows = run_query("SELECT word FROM `bigquery-public-data.samples.shakespeare` LIMIT 10")
-
-# Print results.
-st.write("Some wise words from Shakespeare:")
-for row in rows:
-    st.write("✍️ " + row['word'])
+rows = run_query("SELECT * FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.distribution_of_disruption_effects` LIMIT 1000")

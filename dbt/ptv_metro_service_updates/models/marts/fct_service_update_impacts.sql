@@ -26,6 +26,8 @@ select
     dr.route_color,
     sl.stop_id,
     ds.stop_name,
+    ds.stop_lat,
+    ds.stop_lon,
     sl.agency_id,
     da.agency_name
 from {{ ref("int_service_updates_latest_impacts") }} sl
