@@ -20,6 +20,7 @@ venv/
 .env
 credentials.json
 .env_encoded
+secrets.toml
 
 
 #Ignore the SQLite database file if it exists
