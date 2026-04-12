@@ -18,5 +18,8 @@
     agency_id,
     agency_name
  from {{ ref("fct_service_update_impacts") }}
- where active_period_start <= current_timestamp() 
-    and active_period_end >= current_timestamp()
+where safe_cast(active_period_start as timestamp) <= current_timestamp()
+  and (
+    safe_cast(active_period_end as timestamp) >= current_timestamp()
+    or active_period_end is null
+  )
