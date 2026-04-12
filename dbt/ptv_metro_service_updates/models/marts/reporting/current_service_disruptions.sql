@@ -14,6 +14,8 @@
     route_type,
     route_color,
     stop_id,
+    stop_lat,
+    stop_lon,
     stop_name,
     agency_id,
     agency_name
