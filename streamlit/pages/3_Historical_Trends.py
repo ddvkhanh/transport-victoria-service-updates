@@ -60,7 +60,7 @@ else:
     st.info("No disruption cause data available.")
 
 #Chart 3: Disruptions Over Time
-st.subheader("Disruptions Over Time")
+st.subheader("Disruptions Over Time By Cause")
 
 disruptions_over_time_sql = """
     SELECT
@@ -113,25 +113,84 @@ if rows:
 else:
     st.info("No historical disruption data available.")
 
-#Chart 4: Top 5 Impacted Routes
-st.subheader("Top 5 Impacted Routes Over Time")
 
-impacted_routes_over_time_sql = """
-    SELECT route_id, route_short_name, disruption_count
-    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.ranked_impacted_routes_over_time`
+#Chart 4: Route Disruptions
+st.subheader("Route-Level Disruptions Over Time")
+route_disruptions_sql = """
+    SELECT  
+        route_id,
+        route_short_name,
+        route_long_name,
+        cause,
+        effect,
+        active_period_start,
+        active_period_end
+    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.historical_route_disruptions`
 """
 
-impacted_routes_rows = run_query(impacted_routes_over_time_sql)
+with st.spinner("Loading route disruption history…"):
+    impacted_routes_df = pd.DataFrame(run_query(route_disruptions_sql))
 
-if (impacted_routes_rows):
-    impacted_routes_df = pd.DataFrame(impacted_routes_rows)
+if not impacted_routes_df.empty:
 
     impacted_routes_df = impacted_routes_df.rename(columns={
         "route_id": "Route ID",
         "route_short_name": "Route Short Name",
-        "disruption_count": "Number of Disruptions"
+        "route_long_name": "Route Long Name",
+        "active_period_start": "Active Period Start",
+        "active_period_end": "Active Period End",
+        "cause": "Cause",
+        "effect": "Effect"
     })
 
-    st.dataframe(impacted_df, width="stretch", hide_index=True)
+
+    impacted_routes_df["Active Period Start"] = pd.to_datetime(
+        impacted_routes_df["Active Period Start"], errors="coerce"
+    )
+
+    impacted_routes_df["Active Period End"] = pd.to_datetime(
+        impacted_routes_df["Active Period End"], errors="coerce"
+    )
+
+    min_start_date = impacted_routes_df["Active Period Start"].dt.date.min()
+    max_end_date = impacted_routes_df["Active Period End"].dt.date.max()
+
+    col1, col2 = st.columns(2)
+
+    selected_start_date = col1.date_input(
+        "Start date",
+        value=min_start_date,
+        min_value=min_start_date,
+        max_value=max_end_date
+    )
+    selected_end_date = col2.date_input(
+        "End date",
+        value=max_end_date,
+        min_value=min_start_date,
+        max_value=max_end_date
+    )
+
+    if selected_start_date > selected_end_date:
+        st.warning("Start date must be earlier than or equal to end date.")
+    else:
+        filtered_routes_df = impacted_routes_df[
+            (impacted_routes_df["Active Period Start"].dt.date >= selected_start_date) &
+            (impacted_routes_df["Active Period Start"].dt.date <= selected_end_date)
+        ]
+
+         
+        fig_routes = px.timeline(
+            filtered_routes_df,
+            x_start="Active Period Start",
+            x_end="Active Period End",
+            y="Route Short Name",
+            color="Effect",
+            hover_data=["Route Long Name", "Cause"]
+        )
+
+        fig_routes.update_yaxes(autorange="reversed")
+
+        st.plotly_chart(fig_routes, width="stretch")
+
 else:
     st.info("No impacted route data available.")
