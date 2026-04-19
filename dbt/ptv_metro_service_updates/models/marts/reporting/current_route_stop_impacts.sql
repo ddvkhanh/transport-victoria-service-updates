@@ -4,7 +4,7 @@ Since this model focuses on route-stop level impacts, we need to deduplicate the
 */
 
 {{ config(
-    materialized = 'table'
+    materialized = 'table',
     partition_by={
       "field": "active_period_start",
       "data_type": "timestamp",
