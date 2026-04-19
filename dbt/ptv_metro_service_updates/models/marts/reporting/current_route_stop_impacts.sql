@@ -18,8 +18,8 @@ with current_rows as (
     select
         entity_id,
         ingest_timestamp,
-        active_period_start,
-        active_period_end,
+        safe_cast(active_period_start as timestamp) as active_period_start,
+        safe_cast(active_period_end as timestamp) as active_period_end,
         cause,
         effect,
         description_text,
