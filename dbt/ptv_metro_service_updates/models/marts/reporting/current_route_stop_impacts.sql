@@ -5,6 +5,12 @@ Since this model focuses on route-stop level impacts, we need to deduplicate the
 
 {{ config(
     materialized = 'table'
+    partition_by={
+      "field": "active_period_start",
+      "data_type": "timestamp",
+      "granularity": "day"
+    },
+    cluster_by=['route_id', 'stop_id']
 ) }}
 
 with current_rows as (
@@ -36,6 +42,7 @@ with current_rows as (
         safe_cast(active_period_end as timestamp) >= current_timestamp()
         or active_period_end is null
       )
+       and stop_id is not null
 ),
 
 deduped as (

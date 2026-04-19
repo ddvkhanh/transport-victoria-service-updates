@@ -1,7 +1,7 @@
 version: 1
 
 models:
-  - name: distribution_of_disruptions_over_time
+  - name: historical_disruptions_by_cause
     description: "Distribution of disruptions over time"
     columns:
       - name: disruption_date
@@ -10,7 +10,7 @@ models:
         description: "Effect of the disruption (e.g., delay, cancellation)"
       - name: disruption_count
         description: "Number of disruptions for the given date and effect"
-  - name: distribution_of_disruption_effects
+  - name: disruption_effects_summary
     description: "Distribution of disruption effects"
     columns:
       - name: effect
@@ -18,7 +18,7 @@ models:
       - name: disruption_count
         description: "Number of disruptions for the given effect"
 
-  - name: distribution_of_disruption_causes
+  - name: disruption_causes_summary
     description: "Distribution of disruption causes"
     columns:
       - name: cause

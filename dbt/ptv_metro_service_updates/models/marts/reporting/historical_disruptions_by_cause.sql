@@ -2,6 +2,15 @@
     This report shows the distribution of disruptions over time, allowing stakeholders to identify trends and patterns in service disruptions.
 */
 
+{{ config(
+    materialized='table',
+    partition_by={
+      "field": "disruption_date",
+      "data_type": "date"
+    },
+    cluster_by=['cause']
+) }}
+
 select 
     date(active_period_start) as disruption_date,
     cause,
