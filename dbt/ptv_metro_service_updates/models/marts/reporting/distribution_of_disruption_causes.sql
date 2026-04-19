@@ -6,5 +6,5 @@
     count(*) as frequency,
     cause
  from {{ ref("fct_service_update_impacts") }}
- group by effect
+ group by cause
  order by frequency desc
