@@ -12,19 +12,13 @@ select
     count(*) as active_impacts,
     count(distinct route_id) as impacted_routes,
     count(distinct stop_id) as impacted_stops
-from `ptv-metro-service-updates.ptv_metro_dataset_marts.current_service_disruptions`
+from `ptv-metro-service-updates.ptv_metro_dataset_marts.current_route_stop_impacts`
 """
 metrics_rows = run_query(metrics_sql)
 
 metrics = metrics_rows[0]
+col2, col3 = st.columns(2)
 
-col1, col2, col3 = st.columns(3)
-
-col1.metric(
-    label="Active Impacts",
-    value=metrics["active_impacts"],
-    border=True
-)
 
 col2.metric(
     label="Impacted Routes",
@@ -40,13 +34,15 @@ col3.metric(
 
 # Map of current disruptions affecting stops
 st.subheader("Map of Current Disruptions Affecting Stops")
+st.info("This map shows the locations of stops currently affected by service disruptions. The color of the marker corresponds to the route color of the impacted route.")
+
 map_sql = """
-select distinct stop_name, stop_lat, stop_lon
-from `ptv-metro-service-updates.ptv_metro_dataset_marts.current_service_disruptions`
+select distinct stop_name, stop_lat, stop_lon, concat('#', route_color) as route_color
+from `ptv-metro-service-updates.ptv_metro_dataset_marts.current_route_stop_impacts`
 where stop_lat is not null and stop_lon is not null
 """
 map_rows = run_query(map_sql)
 
 if map_rows:
     map_df = pd.DataFrame(map_rows)
-    st.map(map_df, latitude="stop_lat", longitude="stop_lon", zoom=10)
+    st.map(map_df, latitude="stop_lat", longitude="stop_lon", color="route_color", zoom=10)

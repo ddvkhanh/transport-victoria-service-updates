@@ -17,3 +17,72 @@ models:
         description: "Effect of the disruption (e.g., delay, cancellation)"
       - name: disruption_count
         description: "Number of disruptions for the given effect"
+
+  - name: distribution_of_disruption_causes
+    description: "Distribution of disruption causes"
+    columns:
+      - name: cause
+        description: "Cause of the disruption (e.g., technical issue, weather)"
+      - name: disruption_count
+        description: "Number of disruptions for the given cause"
+  - name: current_route_stop_impacts
+    description: "Current active service disruptions"
+    columns:
+      - name: disruption_id
+        description: "Unique identifier for the disruption"
+      - name: route_id
+        description: "Identifier for the affected route"
+      - name: route_short_name
+        description: "Short name or number of the affected route"
+      - name: route_long_name
+        description: "Full name of the affected route"
+      - name: route_type
+        description: "Type of the affected route (e.g., subway, light rail)"
+      - name: route_color
+        description: "Color associated with the affected route for visualization"
+      - name: stop_id
+        description: "Identifier for the affected stop"
+      - name: stop_name
+        description: "Name of the affected stop"
+      - name: stop_lat
+        description: "Latitude of the affected stop"
+      - name: stop_lon
+        description: "Longitude of the affected stop"
+      - name: active_period_start
+        description: "Start time of the active disruption period"
+      - name: active_period_end
+        description: "End time of the active disruption period"
+      - name: cause
+        description: "Cause of the disruption"
+      - name: effect
+        description: "Effect of the disruption"
+      - name: description_text
+        description: "Description of the disruption"
+      - name: header_text
+        description: "Header text for the disruption"
+      - name: severity_level
+        description: "Severity level of the disruption"
+      - name: direction_id
+        description: "Direction identifier for the affected route"
+      - name: route_id
+        description: "Identifier for the affected route"
+      - name: route_short_name
+        description: "Short name or number of the affected route"
+      - name: route_long_name
+        description: "Full name of the affected route"
+      - name: route_type
+        description: "Type of the affected route (e.g., subway, light rail)"
+      - name: route_color
+        description: "Color associated with the affected route for visualization"
+      - name: stop_id
+        description: "Identifier for the affected stop"
+      - name: stop_lat
+        description: "Latitude of the affected stop"
+      - name: stop_lon
+        description: "Longitude of the affected stop"
+      - name: stop_name
+        description: "Name of the affected stop"
+      - name: agency_id
+        description: "Identifier for the agency responsible for the disruption"
+      - name: agency_name
+        description: "Name of the agency responsible for the disruption"
