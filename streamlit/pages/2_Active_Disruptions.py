@@ -28,7 +28,7 @@ select
     effect,
     active_period_start,
     active_period_end,
-    severity_level
+    description_text
 from `ptv-metro-service-updates.ptv_metro_dataset_marts.current_route_stop_impacts`
 where (@route is null or lower(route_short_name) like lower(concat('%', @route, '%')))
   and (@stop  is null or lower(stop_name)        like lower(concat('%', @stop,  '%')))
@@ -49,6 +49,7 @@ if disruptions_rows:
         "route_short_name": "Route Name",
         "stop_name": "Stop Name",
         "header_text": "Description",
+        "description_text": "Additional Details",
         "cause": "Cause",
         "effect": "Effect",
         "active_period_start": "Start Time",
