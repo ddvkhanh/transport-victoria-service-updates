@@ -1,3 +1,6 @@
+/**
+    This report shows the distribution of disruptions over time, allowing stakeholders to identify trends and patterns in service disruptions.
+*/
 
 select 
     date(active_period_start) as disruption_date,
