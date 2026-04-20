@@ -11,6 +11,8 @@ This project solves this problem by building an end-to-end data pipeline that co
 
 By using a micro-batch approach (every 15 minutes), the pipeline achieves near real-time insights while keeping the architecture simple and cost-effective.
 
+🔗 **Live Dashboard**: [ptv-metro-disruptions.streamlit.app](https://ptv-metro-disruptions.streamlit.app/)
+
 ---
 
 ## 2. Data Source Overview
@@ -33,7 +35,7 @@ This API returns a response in **Protocol Buffer (.pb)** format.
 - **Data Lake**: Google Cloud Storage (GCS)
 - **Data Warehouse**: Google BigQuery
 - **Data Transformation**: dbt (Data Build Tool)
-- **Dashboard**: Looker Studio
+- **Dashboard**: Streamlit
 - **Language**: Python (environment managed by `uv`)
 
 ---
@@ -55,6 +57,14 @@ transport-victoria-service-updates/
 │   └── ingest_data.yml   # The primary pipeline DAG
 ├── profiles_template.yaml# Template for local dbt development
 ├── README.md             # This document
+├── streamlit/            # Streamlit dashboard application
+│   ├── app.py            # Entry point & multi-page navigation
+│   ├── pages/            # Individual dashboard pages
+│   │   ├── 1_Overview.py
+│   │   ├── 2_Active_Disruptions.py
+│   │   └── 3_Historical_Trends.py
+│   ├── utils/            # Shared utilities (BigQuery query helper)
+│   └── .streamlit/       # Streamlit configuration & secrets
 ├── terraform/            # Infrastructure as Code (GCP resources)
 │   ├── main.tf
 │   └── variables.tf
@@ -99,6 +109,10 @@ To keep data efficiently organized and logically separated, the warehouse utiliz
 
 **Optimization Note:** Day-level partitioning on the raw data table is crucial for efficiency. Because dashboard filters and downstream dbt analytical queries overwhelmingly aggregate disruptions based on their occurrence date, partitioning drastically reduces the volume of data scanned. This significantly improves query execution speeds and minimizes compute costs.
 
+**GCS Lifecycle Policy:** To prevent the data lake from accumulating stale files and incurring unnecessary storage costs, the GCS bucket enforces the following lifecycle rules:
+- **Delete objects** older than **3 days** since creation — raw `.ndjson` files are safely removed once loaded into BigQuery.
+- **Delete incomplete multipart uploads** older than **1 day** since upload was initiated — avoids orphaned upload fragments consuming storage.
+
 ![BigQuery Transformed Data](./images/bigquery.png)
 
 ---
@@ -109,31 +123,69 @@ Data transformations are fully managed and defined using **dbt**. Instead of rel
 
 - **Staging**: The raw, nested JSON alerts ingested into BigQuery are unpacked, flattened, and cast into standardized relational views (e.g., `stg_service_alerts_base`).
 - **Intermediate**: Complex business logic is applied here to cleanly join active alert periods with the specific entities (routes/stops) they affect.
-- **Marts**: The final layer produces materialized, aggregated fact tables (e.g., `fct_service_update_impacts`) optimized exclusively for reporting. This layer is heavily enriched with contextual metadata by joining dimensional seed data (stops, routes, agencies). *Note: The `dbt_utils` package is utilized here for generating surrogate keys.*
+- **Marts**: The final layer produces materialized, aggregated fact and dimension tables optimized exclusively for reporting. This layer is heavily enriched with contextual metadata by joining dimensional seed data (stops, routes, agencies). *Note: The `dbt_utils` package is utilized here for generating surrogate keys.*
 - **Testing**: Automated data quality checks are built-in. Standard constraints (`not_null`, `unique`) are enforced via `schema.yml`, while custom SQL validation logic is maintained inside the `tests/` directory to safeguard dashboard integrity.
+
+### Marts Models
+
+The marts layer is split into a core fact table and a set of reporting-focused views:
+
+| Model | Type | Description |
+|---|---|---|
+| `fct_service_update_impacts` | Fact table | Central grain table joining service alerts with route, stop, and agency dimensions. One row per alert–entity impact. |
+| `dim_routes` | Dimension | Route reference data (route ID, short/long name, type, color). |
+| `dim_stops` | Dimension | Stop reference data (stop ID, name, lat/lon). |
+| `dim_agency` | Dimension | Agency reference data (agency ID and name). |
+| **Reporting** | | |
+| `current_route_stop_impacts` | Reporting | Currently active disruptions filtered by timestamp, deduplicated per route–stop combination, partitioned by `active_period_start` and clustered by `route_id`, `stop_id`. Feeds the Overview and Active Disruptions pages. |
+| `historical_route_disruptions` | Reporting | Historical route-level disruptions, deduplicated per entity–route, partitioned by `active_period_start` and clustered by `route_id`. Feeds the Gantt timeline chart. |
+| `historical_disruptions_by_cause` (aliased `distribution_of_disruptions_over_time`) | Reporting | Daily disruption counts grouped by cause, partitioned by `disruption_date` and clustered by `cause`. Feeds the time-series bar chart. |
+| `disruption_effects_summary` (aliased `distribution_of_disruption_effects`) | Reporting | Aggregate frequency of each disruption effect across all historical records. Feeds the pie chart. |
+| `disruption_causes_summary` (aliased `distribution_of_disruption_causes`) | Reporting | Aggregate frequency of each disruption cause across all historical records. Feeds the bar chart. |
+| `top_impacted_routes` | Reporting | Top routes ranked by distinct alert count. Reserved for future dashboard tiles. |
 
 Below is a visualization excerpt of the dbt pipeline lineage:
 
-![dbt lineage](dbt-diagram.png)
+![dbt lineage](images/dbt-diagram.png)
 
 *For comprehensive documentation of individual models and schema structures, please explore the dedicated [`dbt/README.md`](./dbt/ptv_metro_service_updates/README.md).*
 
 ---
 
-## 9. Dashboard
+## 9. Dashboard (Streamlit)
 
-The final transformed data in BigQuery is visualized using a **Looker Studio** dashboard containing two main tiles:
+The final transformed data in BigQuery is visualized through a multi-page **Streamlit** application that connects directly to BigQuery at runtime.
 
-1. **Most Frequent Service Disruption Effects**: Highlights the distribution of specific disruption impacts (e.g., delays, cancellations, platform alterations) across different train lines. Ranking these effects helps identify the most common types of disruptions, allowing for a better assessment of the overall stability and reliability of the service.
-2. **Number of Impacted Routes by Disruption Cause Over Time**: Visualizes the frequency and historical timeline of disruption incidents. Documenting these time-series trends helps pinpoint exactly when severe disruptions typically occur and how many routes are impacted simultaneously, providing crucial data to help planners proactively arrange service replacements and minimize passenger inconvenience.
+🔗 **Live App**: [ptv-metro-disruptions.streamlit.app](https://ptv-metro-disruptions.streamlit.app/)
 
-The data powering these visualizations is sourced directly from the final aggregate models located in the `dbt/ptv_metro_service_updates/models/marts/reporting` folder.
+The app is structured into three pages:
 
-![Looker Studio Dashboard](./images/visualization.png)
+### Page 1 — Overview
+Provides a high-level snapshot of the current network state:
+- **Impacted Routes** and **Impacted Stops** summary metrics.
+- **Interactive map** of stops currently affected by service disruptions, with marker colours matching each route's official line colour (sourced from `current_route_stop_impacts`).
 
-To access the interactive dashboard, please visit the following link:
+![Overview page](./images/streamlit_overview.png)
 
-[Looker Studio URL](https://lookerstudio.google.com/reporting/b3525a7f-02d2-4673-8b36-7463d9abfc26/page/p_123456789)
+### Page 2 — Active Disruptions
+Provides an operational view of live disruptions:
+- Searchable table filterable by **route name** and **stop name**.
+- Displays cause, effect, description, and active period for each disruption (sourced from `current_route_stop_impacts`).
+
+![Active Disruptions page](./images/streamlit_active_disruptions.png)
+
+### Page 3 — Historical Trends
+Provides analytical charts for understanding disruption patterns over time:
+- **Most Common Disruption Effects** — Pie chart of effect frequency (sourced from `disruption_effects_summary`).
+- **Top Disruption Causes** — Bar chart of cause frequency (sourced from `disruption_causes_summary`).
+- **Disruptions Over Time by Cause** — Date-filtered stacked bar chart, visualizing daily disruption counts grouped by cause (sourced from `historical_disruptions_by_cause`).
+- **Route-Level Disruptions Over Time** — Date-filtered Gantt/timeline chart showing each route's disruption periods coloured by effect (sourced from `historical_route_disruptions`).
+
+![Historical Trends page 1](./images/streamlit_historical_trends_1.png)
+![Historical Trends page 2](./images/streamlit_historical_trends_2.png)
+![Historical Trends page 3](./images/streamlit_historical_trends_3.png)
+
+All data powering these visualizations is sourced from the reporting models in `dbt/ptv_metro_service_updates/models/marts/reporting`.
 
 ---
 
@@ -251,7 +303,28 @@ Kestra manages both data ingestion and dbt execution. You must ensure the config
 
 6. Enable the trigger and your pipeline will run automatically every 15 minutes!
 
-### Step 7: Local dbt Development (Optional)
+### Step 7: Streamlit Dashboard Setup
+
+The Streamlit app connects to BigQuery using a service account key stored as a Streamlit secret.
+
+1. Navigate to the `streamlit/` directory:
+   ```bash
+   cd streamlit
+   ```
+2. Copy the secrets template and fill in your details:
+   ```bash
+   cp .streamlit/secrets_template.toml .streamlit/secrets.toml
+   ```
+   Open `.streamlit/secrets.toml` and provide:
+   - `project`: Your GCP Project ID.
+   - `credentials`: The contents of your `credentials.json` (as a TOML inline table or JSON string, per the template).
+3. Install the Streamlit dependencies (they are included in the project's `uv` environment):
+   ```bash
+   uv run streamlit run app.py
+   ```
+4. Open your browser and navigate to `http://localhost:8501` to view the dashboard.
+
+### Step 8: Local dbt Development (Optional)
 
 If you wish to develop and test dbt models locally outside of Kestra:
 
@@ -273,5 +346,4 @@ If you wish to develop and test dbt models locally outside of Kestra:
 
 As the platform scales, the following optimizations and architectural enhancements should be considered:
 
-- **Cost & Storage Optimization**: To prevent the raw data landing zone from becoming a data swamp and compounding storage costs, the Terraform configuration applies a lifecycle policy to the GCS bucket that automatically deletes raw `.ndjson` files older than 3 days. Since the data is immediately loaded into BigQuery during the pipeline execution, this perfectly minimizes long-term storage costs.
 - **Incremental Data Loading**: Currently, the dbt transformations may be rebuilding fact tables via full-refresh or simple materializations. As the historical dataset inside BigQuery grows significantly larger over time, transitioning the core dbt models (such as `fct_service_update_impacts`) to use `incremental` materializations will be essential. This will restrict data transformations to only newly appended records, drastically reducing BigQuery compute costs and query execution times.
