@@ -35,7 +35,7 @@ models:
         description: "Color associated with the route for visualization"
       - name: route_text_color
         description: "Text color for the route when visualized"
-  
+
   - name: dim_stops
     description: "Dimension table for transit stops"
     columns:
@@ -55,7 +55,20 @@ models:
         description: "Identifier for the level of the stop (e.g., platform level, concourse level)"
       - name: wheelchair_boarding
         description: "Indicates whether wheelchair boarding is available at this stop (0 = no information, 1 = available, 2 = not available)"
-  
+  - name: dim_alert_classification
+    description: "Dimension table for alert classification (cause / effect / severity_level)"
+    columns:
+      - name: alert_classification_sk
+        description: "Surrogate key — hash of (cause, effect, severity_level)"
+        data_tests:
+          - not_null
+          - unique
+      - name: cause
+        description: "GTFS-realtime cause enum (e.g., MAINTENANCE, CONSTRUCTION, WEATHER)"
+      - name: effect
+        description: "GTFS-realtime effect enum (e.g., NO_SERVICE, REDUCED_SERVICE, DETOUR)"
+      - name: severity_level
+        description: "Severity (INFO, WARNING, SEVERE)"
   - name: fct_service_update_impacts
     description: "Fact table for service updates"
     columns:
@@ -108,5 +121,3 @@ models:
         description: "Name of the stop associated with the service update, if applicable"
       - name: agency_name
         description: "Name of the agency associated with the service update"
-
-    
