@@ -60,11 +60,6 @@ select
     cast(format_date('%Y%m%d', date(i.active_period_start)) as int64)  as active_period_start_date_key,
     cast(format_date('%Y%m%d', date(i.active_period_end))   as int64)  as active_period_end_date_key,
 
-
-    -- Timestamps (for partition + reporting filters)
-    active_period_start,
-    active_period_end,
-
     -- Measures
     timestamp_diff(active_period_end, active_period_start, SECOND)     as disruption_duration_seconds,
     case
