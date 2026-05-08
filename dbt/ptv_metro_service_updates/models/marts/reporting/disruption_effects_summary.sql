@@ -1,10 +1,16 @@
-/** 
-    This report identifies the most common disruption effects in the service updates, ranked by their frequency of occurrence. 
- **/
+/**
+  Most common disruption effects by frequency.
+  Excludes general route-only alerts.
+*/
 
- select
-    count(*) as frequency,
-    effect
- from {{ ref("fct_service_update_impacts") }}
- group by effect
- order by frequency desc
+{{ config(materialized='view') }}
+
+select
+    ac.effect,
+    count(*) as frequency
+from {{ ref('fct_service_update_impacts') }}    f
+left join {{ ref('dim_alert_classification') }} ac on f.alert_classification_sk = ac.alert_classification_sk
+where f.is_stop_alert
+  and ac.effect is not null
+group by ac.effect
+order by frequency desc
