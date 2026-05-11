@@ -22,7 +22,7 @@ with base as (
         f.ingest_timestamp,
         f.route_sk,
         f.alert_classification_sk,
-        f.disruption_duration_seconds,
+        f.disruption_duration_seconds,  -- kept for the conversion below
         f.active_period_start_date_key,
         f.active_period_end_date_key
     from {{ ref("fct_service_update_impacts") }}
@@ -51,10 +51,10 @@ select
     ac.severity_level,
     ds.full_date as active_period_start_date,
     de.full_date as active_period_end_date,
-    d.disruption_duration_seconds
+    round(d.disruption_duration_seconds / 86400.0, 2) as disruption_duration_days
 from deduped d
 left join {{ ref("dim_alert_classification") }} ac on d.alert_classification_sk = ac.alert_classification_sk
-left join {{ ref("dim_route") }} r on d.route_sk = r.route_sk
-left join {{ ref("dim_date") }} ds on date(d.active_period_start_date_key) = ds.date_key
-left join {{ ref("dim_date") }} de on date(d.active_period_end_date_key) = de.date_key
+left join {{ ref("dim_routes") }} r on d.route_sk = r.route_sk
+left join {{ ref("dim_date") }} ds on d.active_period_start_date_key = ds.date_key
+left join {{ ref("dim_date") }} de on d.active_period_end_date_key = de.date_key
 where d.rn = 1

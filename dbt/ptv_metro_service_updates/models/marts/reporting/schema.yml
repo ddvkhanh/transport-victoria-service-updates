@@ -6,10 +6,33 @@ models:
     columns:
       - name: disruption_date
         description: "Date of the disruption"
-      - name: effect
-        description: "Effect of the disruption (e.g., delay, cancellation)"
+      - name: cause
+        description: "Cause of the disruption (e.g., technical issue, weather)"
       - name: disruption_count
         description: "Number of disruptions for the given date and effect"
+  - name: historical_route_disruptions
+    description: "Historical disruptions for each route"
+    columns:
+      - name: disruption_id
+        description: "Unique identifier for the disruption"
+      - name: route_id
+        description: "Identifier for the affected route"
+      - name: route_short_name
+        description: "Short name or number of the affected route"
+      - name: route_long_name
+        description: "Full name of the affected route"
+      - name: active_period_start_date
+        description: "Start time of the active disruption period"
+      - name: active_period_end_date
+        description: "End time of the active disruption period"
+      - name: disruption_duration_days
+        description: "Duration of the disruption in days"
+      - name: cause
+        description: "Cause of the disruption"
+      - name: effect
+        description: "Effect of the disruption"
+      - name: severity_level
+        description: "Severity level of the disruption"
   - name: disruption_effects_summary
     description: "Distribution of disruption effects"
     columns:

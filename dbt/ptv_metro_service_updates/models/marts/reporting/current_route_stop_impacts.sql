@@ -31,8 +31,6 @@ with current_rows as (
         agency_sk,
         active_period_start_date_key,
         active_period_end_date_key,
-        active_period_start,
-        active_period_end,
         disruption_duration_seconds,
         is_currently_active,
         is_route_alert,
