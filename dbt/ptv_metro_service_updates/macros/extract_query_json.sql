@@ -2,4 +2,4 @@
 
 {% macro extract_query_json(json_column, json_path) %}
     JSON_QUERY({{json_column}}, '{{json_path}}')
-{% endmacro %}}
+{% endmacro %}

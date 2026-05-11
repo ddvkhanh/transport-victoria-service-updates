@@ -48,74 +48,86 @@ models:
     description: "Date dimension (2024-2030)"
     columns:
       - name: date_key
-        description: "Surrogate key in YYYYMMDD form"
+        description: "Surrogate key in YYYYMMDD form (INT64, YYYYMMDD)"
         data_tests: [not_null, unique]
       - name: full_date
         data_tests: [not_null, unique]
       - name: is_weekend
-      - name: dim_alert_classification
-        description: "Dimension table for alert classification (cause / effect / severity_level)"
-        columns:
-          - name: alert_classification_sk
-            description: "Surrogate key — hash of (cause, effect, severity_level)"
-            data_tests:
-              - not_null
-              - unique
-          - name: cause
-            description: "GTFS-realtime cause enum (e.g., MAINTENANCE, CONSTRUCTION, WEATHER)"
-          - name: effect
-            description: "GTFS-realtime effect enum (e.g., NO_SERVICE, REDUCED_SERVICE, DETOUR)"
-          - name: severity_level
-            description: "Severity (INFO, WARNING, SEVERE)"
-  - name: fct_service_update_impacts
-    description: "Fact table for service updates"
+
+  - name: dim_alert_classification
+    description: "Dimension table for alert classification (cause / effect / severity_level)"
     columns:
-      - name: service_update_route_sk
-        description: "Surrogate key for the service update by route"
+      - name: alert_classification_sk
+        description: "Surrogate key — hash of (cause, effect, severity_level)"
         data_tests:
           - not_null
           - unique
+      - name: cause
+        description: "GTFS-realtime cause enum (e.g., MAINTENANCE, CONSTRUCTION, WEATHER)"
+      - name: effect
+        description: "GTFS-realtime effect enum (e.g., NO_SERVICE, REDUCED_SERVICE, DETOUR)"
+      - name: severity_level
+        description: "Severity (INFO, WARNING, SEVERE)"
+
+  - name: fct_service_update_impacts
+    description: >
+      Grain: one row per alert × informed entity × active period.
+      Conformed fact table joining service alerts with route, stop, and agency dimensions.
+      All descriptive attributes are resolved via surrogate key joins — no denormalized
+      natural keys or dim attributes are stored here.
+    columns:
+      # --- Degenerate dimensions ---
       - name: entity_id
-        description: "Unique identifier for the service update entity"
+        description: "GTFS-RT entity ID — identifies the alert at source"
         data_tests:
           - not_null
       - name: entity_timestamp
-        description: "Timestamp when the service update entity was created or last updated"
+        description: "Feed-level timestamp when this entity was last published by the API"
         data_tests:
           - not_null
+      - name: ingest_timestamp
+        description: "Timestamp when this row was loaded into the raw BigQuery table"
       - name: informed_entity_index
-        description: "Index of the informed entity within the service update"
-      - name: description_text
-        description: "Description of the service update"
-      - name: cause
-        description: "Cause of the service update"
-      - name: effect
-        description: "Effect of the service update on transit operations"
-      - name: active_period_start
-        description: "Start time of the active period for the service update"
-      - name: active_period_end
-        description: "End time of the active period for the service update"
-      - name: header_text
-        description: "Header text for the service update"
-      - name: severity_level
-        description: "Severity level of the service update"
-      - name: agency_id
-        description: "Identifier for the agency associated with the service update"
+        description: "0-based index of the informed entity within the alert (one alert can affect many routes/stops)"
+      - name: active_period_index
+        description: "0-based index of the active period within the alert"
       - name: direction_id
-        description: "Direction identifier for the service update (e.g., 0 = outbound, 1 = inbound)"
-      - name: route_id
-        description: "Identifier for the route associated with the service update"
-      - name: route_short_name
-        description: "Short name or number of the route associated with the service update"
-      - name: route_long_name
-        description: "Full name of the route associated with the service update"
-      - name: route_type
-        description: "Type of the route associated with the service update (e.g., subway, light rail)"
-      - name: route_color
-        description: "Color associated with the route for visualization"
-      - name: stop_id
-        description: "Identifier for the stop associated with the service update, if applicable"
-      - name: stop_name
-        description: "Name of the stop associated with the service update, if applicable"
-      - name: agency_name
-        description: "Name of the agency associated with the service update"
+        description: "Direction of travel affected (0 = outbound, 1 = inbound, NULL = both)"
+      - name: description_text
+        description: "Full human-readable description of the disruption"
+      - name: header_text
+        description: "Short headline for the disruption (used in dashboard cards)"
+
+      # --- Foreign keys ---
+      - name: alert_classification_sk
+        description: "FK → dim_alert_classification.alert_classification_sk (hash of cause + effect + severity_level); NULL when the API returned no classification data for this alert"
+      - name: route_sk
+        description: "FK → dim_routes.route_sk; NULL when alert targets a stop only"
+      - name: stop_sk
+        description: "FK → dim_stops.stop_sk; NULL when alert targets a route only"
+      - name: agency_sk
+        description: "FK → dim_agency.agency_sk"
+
+      # --- Date keys ---
+      - name: active_period_start_date_key
+        description: "FK → dim_date.date_key for the disruption start date (INT64, YYYYMMDD)"
+      - name: active_period_end_date_key
+        description: "FK → dim_date.date_key for the disruption end date (INT64, YYYYMMDD); NULL if open-ended"
+
+      # --- Timestamps (partition field + paired end) ---
+      - name: active_period_start
+        description: "Exact UTC timestamp when the disruption becomes active (partition field)"
+        data_tests:
+          - not_null
+      - name: active_period_end
+        description: "Exact UTC timestamp when the disruption ends; NULL if the alert has no scheduled end"
+
+      # --- Measures ---
+      - name: disruption_duration_seconds
+        description: "Elapsed seconds between active_period_start and active_period_end; NULL when end is unknown"
+      - name: is_currently_active
+        description: "TRUE if current_timestamp() falls within [active_period_start, active_period_end)"
+      - name: is_route_alert
+        description: "TRUE when route_id is present but stop_id is absent — alert applies to an entire route"
+      - name: is_stop_alert
+        description: "TRUE when stop_id is present — alert applies to a specific stop"

@@ -1,4 +1,4 @@
-﻿stop_id,stop_name,stop_lat,stop_lon,stop_url,location_type,parent_station,wheelchair_boarding,level_id,platform_code
+stop_id,stop_name,stop_lat,stop_lon,stop_url,location_type,parent_station,wheelchair_boarding,level_id,platform_code
 "10117","Jordanville Station","-37.87360157","145.11197651","https://transport.vic.gov.au/stop/1105/?utm_source=open_data_click_stop&utm_medium=open_data_stop_click&utm_campaign=open_data_click","","vic:rail:JOR","1","Level 1","1"
 "10920","Flagstaff Station","-37.81205297","144.95562907","https://transport.vic.gov.au/stop/1068/?utm_source=open_data_click_stop&utm_medium=open_data_stop_click&utm_campaign=open_data_click","","vic:rail:FGS","1","Level -3","1"
 "10921","Flagstaff Station","-37.81192588","144.95557578","https://transport.vic.gov.au/stop/1068/?utm_source=open_data_click_stop&utm_medium=open_data_stop_click&utm_campaign=open_data_click","","vic:rail:FGS","1","Level -3","2"

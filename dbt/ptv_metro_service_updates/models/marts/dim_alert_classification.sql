@@ -1,4 +1,4 @@
-ith src as (
+with src as (
 
     select distinct
         cause,
