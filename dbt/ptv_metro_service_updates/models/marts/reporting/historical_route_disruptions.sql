@@ -25,7 +25,7 @@ with base as (
         f.disruption_duration_seconds,  -- kept for the conversion below
         f.active_period_start_date_key,
         f.active_period_end_date_key
-    from {{ ref("fct_service_update_impacts") }}
+    from {{ ref("fct_service_update_impacts") }} f
     where is_route_alert = true
         and active_period_start_date_key is not null
 ),
