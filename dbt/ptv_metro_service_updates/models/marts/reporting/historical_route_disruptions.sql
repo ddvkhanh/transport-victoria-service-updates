@@ -24,7 +24,8 @@ with base as (
         f.alert_classification_sk,
         f.disruption_duration_seconds,  -- kept for the conversion below
         f.active_period_start_date_key,
-        f.active_period_end_date_key
+        f.active_period_end_date_key,
+        f.active_period_start              -- required: partition field must be in SELECT
     from {{ ref("fct_service_update_impacts") }} f
     where is_route_alert = true
         and active_period_start_date_key is not null
@@ -43,6 +44,7 @@ deduped as (
 select
     d.entity_id,
     d.ingest_timestamp,
+    d.active_period_start,
     r.route_id,
     r.route_short_name,
     r.route_long_name,
