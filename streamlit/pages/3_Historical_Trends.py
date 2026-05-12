@@ -12,7 +12,7 @@ st.subheader("Most Common Disruption Effects")
 
 effects_sql = """
     SELECT frequency, effect   
-    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.distribution_of_disruption_effects`
+    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.disruption_effects_summary`
 """
 with st.spinner("Loading disruption effects…"):
     effects_df = pd.DataFrame(run_query(effects_sql))
@@ -38,7 +38,7 @@ st.subheader("Top Disruption Causes")
 
 causes_sql = """
     SELECT frequency, cause
-    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.distribution_of_disruption_causes`
+    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.disruption_causes_summary`
 """
 
 with st.spinner("Loading disruption causes…"):
@@ -67,7 +67,7 @@ disruptions_over_time_sql = """
         disruption_date,
         cause,
         disruption_count
-    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.distribution_of_disruptions_over_time`
+    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.historical_disruptions_by_cause`
     ORDER BY disruption_date
 """
 
