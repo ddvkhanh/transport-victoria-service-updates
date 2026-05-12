@@ -11,7 +11,7 @@
         "data_type": "timestamp",
         "granularity": "day"
     },
-    cluster_by=['route_sk', 'stop_sk']
+    cluster_by=['route_id', 'stop_id']
 ) }}
 
 with current_rows as (

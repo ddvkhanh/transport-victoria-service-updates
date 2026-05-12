@@ -79,7 +79,8 @@ tasks:
             target: prod
         commands:
           - dbt deps
-          - dbt build
+          - dbt seed --full-refresh
+          - dbt build --exclude resource_type:seed
 
   - id: purge_files
     type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
