@@ -11,7 +11,7 @@
       "data_type": "timestamp",
       "granularity": "day"
     },
-    cluster_by=['route_sk']
+    cluster_by=['route_id']
 ) }}
 
 
