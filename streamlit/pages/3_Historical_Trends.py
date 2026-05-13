@@ -7,34 +7,8 @@ import plotly.express as px
 st.title("Historical Trends")
 st.info("Historical counts include all recorded service impact records, so a single disruption may be counted more than once where separate impacts are recorded for different travel directions.")
 
-# Chart 1: Distribution of Disruption Effects
-st.subheader("Most Common Disruption Effects")
-
-effects_sql = """
-    SELECT frequency, effect   
-    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.disruption_effects_summary`
-"""
-with st.spinner("Loading disruption effects…"):
-    effects_df = pd.DataFrame(run_query(effects_sql))
-
-effects_df = effects_df.rename(columns={
-    "frequency": "Frequency",
-    "effect": "Disruption Effect"
-})
-
-if not effects_df.empty:
-    fig_effects = px.pie(
-    effects_df,
-    names="Disruption Effect",
-    values="Frequency",
-    )
-
-    st.plotly_chart(fig_effects, width="stretch")
-else:
-    st.info("No disruption effect data available.")
-
-# Chart 2: Top Disruption Causes
-st.subheader("Top Disruption Causes")
+# Chart 1: Disruption Causes Breakdown
+st.subheader("Disruption Causes Breakdown")
 
 causes_sql = """
     SELECT frequency, cause
@@ -59,8 +33,8 @@ if not causes_df.empty:
 else:
     st.info("No disruption cause data available.")
 
-#Chart 3: Disruptions Over Time
-st.subheader("Disruptions Over Time By Cause")
+#Chart 2: Disruptions Over Time
+st.subheader("Route Disruptions by Cause")
 
 disruptions_over_time_sql = """
     SELECT
@@ -113,18 +87,44 @@ if rows:
 else:
     st.info("No historical disruption data available.")
 
+# Chart 3: Distribution of Disruption Effects
+st.subheader("Disruption Effects Breakdown")
 
-#Chart 4: Route Disruptions
-st.subheader("Route-Level Disruptions Over Time")
+effects_sql = """
+    SELECT frequency, effect   
+    FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.disruption_effects_summary`
+"""
+with st.spinner("Loading disruption effects…"):
+    effects_df = pd.DataFrame(run_query(effects_sql))
+
+effects_df = effects_df.rename(columns={
+    "frequency": "Frequency",
+    "effect": "Disruption Effect"
+})
+
+if not effects_df.empty:
+    fig_effects = px.pie(
+    effects_df,
+    names="Disruption Effect",
+    values="Frequency",
+    )
+
+    st.plotly_chart(fig_effects, width="stretch")
+else:
+    st.info("No disruption effect data available.")
+
+
+#Chart 4: Route Disruptions by Effects
+st.subheader("Route Disruptions by Effects")
 route_disruptions_sql = """
-    SELECT  
+    SELECT
         route_id,
         route_short_name,
         route_long_name,
         cause,
         effect,
-        active_period_start,
-        active_period_end
+        active_period_start_date,
+        active_period_end_date
     FROM `ptv-metro-service-updates.ptv_metro_dataset_marts.historical_route_disruptions`
 """
 
@@ -137,8 +137,8 @@ if not impacted_routes_df.empty:
         "route_id": "Route ID",
         "route_short_name": "Route Short Name",
         "route_long_name": "Route Long Name",
-        "active_period_start": "Active Period Start",
-        "active_period_end": "Active Period End",
+        "active_period_start_date": "Active Period Start",
+        "active_period_end_date": "Active Period End",
         "cause": "Cause",
         "effect": "Effect"
     })
