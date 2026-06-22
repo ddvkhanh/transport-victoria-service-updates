@@ -125,8 +125,6 @@ models:
       # --- Measures ---
       - name: disruption_duration_seconds
         description: "Elapsed seconds between active_period_start and active_period_end; NULL when end is unknown"
-      - name: is_currently_active
-        description: "TRUE if current_timestamp() falls within [active_period_start, active_period_end)"
       - name: is_route_alert
         description: "TRUE when route_id is present but stop_id is absent — alert applies to an entire route"
       - name: is_stop_alert

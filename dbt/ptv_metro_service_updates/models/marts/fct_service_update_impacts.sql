@@ -1,11 +1,13 @@
 {{ config(
-    materialized='table',
+    materialized='incremental',
+    unique_key='service_update_sk',
     partition_by={
         "field": "active_period_start",
         "data_type": "timestamp",
         "granularity": "day"
     },
-    cluster_by=['route_sk', 'stop_sk']
+    cluster_by=['route_sk', 'stop_sk'],
+    incremental_strategy='merge'
 ) }}
 
 with impacts as (
@@ -28,6 +30,10 @@ with impacts as (
         safe_cast(i.active_period_start as timestamp) as active_period_start,
         safe_cast(i.active_period_end   as timestamp) as active_period_end
     from {{ ref('int_service_updates_latest_impacts') }} i
+    {% if is_incremental() %}
+        where i.ingest_timestamp  > (select coalesce(max(ingest_timestamp ),'1900-01-01') from {{ this }} )
+
+    {% endif %}
 
 )
 
@@ -59,11 +65,6 @@ select
 
     -- Measures
     timestamp_diff(i.active_period_end, i.active_period_start, SECOND) as disruption_duration_seconds,
-    case
-        when i.active_period_start <= current_timestamp()
-         and (i.active_period_end >= current_timestamp() or i.active_period_end is null)
-        then true else false
-    end                                                                 as is_currently_active,
     case when r.route_sk is not null and s.stop_sk is null then true else false end as is_route_alert,
     case when s.stop_sk is not null then true else false end             as is_stop_alert
 

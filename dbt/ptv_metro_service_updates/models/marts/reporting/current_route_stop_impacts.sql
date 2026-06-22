@@ -35,12 +35,12 @@ with current_rows as (
         active_period_start,
         active_period_end,
         disruption_duration_seconds,
-        is_currently_active,
         is_route_alert,
         is_stop_alert
 
     from {{ ref("fct_service_update_impacts") }}
-    where is_currently_active = true
+    where active_period_start <= current_timestamp()
+     and (active_period_end >= current_timestamp() or active_period_end is null)
         and is_stop_alert = true
 
 ),
