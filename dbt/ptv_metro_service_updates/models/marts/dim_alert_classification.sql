@@ -4,7 +4,7 @@ with src as (
         cause,
         effect,
         severity_level
-    from {{ ref('int_service_updates_latest_base') }}
+    from {{ ref('stg_service_alerts_base') }}
     where coalesce(cause, effect, severity_level) is not null
 
 )

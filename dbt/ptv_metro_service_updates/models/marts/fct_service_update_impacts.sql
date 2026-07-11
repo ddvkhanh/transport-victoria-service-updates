@@ -29,10 +29,12 @@ with impacts as (
         i.active_period_index,
         safe_cast(i.active_period_start as timestamp) as active_period_start,
         safe_cast(i.active_period_end   as timestamp) as active_period_end
-    from {{ ref('int_service_updates_latest_impacts') }} i
+    from {{ ref('int_service_updates_all_impacts') }} i
     {% if is_incremental() %}
-        where i.ingest_timestamp  > (select coalesce(max(ingest_timestamp ),'1900-01-01') from {{ this }} )
-
+        where i.ingest_timestamp > (
+            select coalesce(max(ingest_timestamp), timestamp('1900-01-01'))
+            from {{ this }}
+        ) - interval 3 day
     {% endif %}
 
 )

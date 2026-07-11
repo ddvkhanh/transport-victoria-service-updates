@@ -77,6 +77,11 @@ models:
       natural keys or dim attributes are stored here.
     columns:
       # --- Degenerate dimensions ---
+      - name: service_update_sk
+        description: "Surrogate key — hash of (entity_id, ingest_timestamp, informed_entity_index, active_period_index)"
+        data_tests:
+          - not_null
+          - unique
       - name: entity_id
         description: "GTFS-RT entity ID — identifies the alert at source"
         data_tests:
